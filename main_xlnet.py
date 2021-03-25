@@ -1,9 +1,8 @@
-# Yelp Reviews Regression Model
+# Yelp Reviews Sequence Classification Model
 
 # Read in Training and Test datasets (CSV format)
 # Compute Validation Split
-# Basic Idea. Use 3 different encoders (BERT, XLNET and LSTM) to create encoding for each review.
-# To aid comparision, we use a constant architecture after the encoder, which is an MLP layer followed by a binary cross entropy loss computation
+# Basic Idea: Try 3 different models (BERT, XLNET and LSTM) to do sentiment analysis for each review.
 
 # imports
 import torch

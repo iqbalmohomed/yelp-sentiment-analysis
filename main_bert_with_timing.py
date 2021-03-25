@@ -1,9 +1,8 @@
-# Yelp Reviews Regression Model
+# Yelp Reviews Sequence Classification Model
 
 # Read in Training and Test datasets (CSV format)
 # Compute Validation Split
-# Basic Idea. Use 3 different encoders (BERT, XLNET and LSTM) to create encoding for each review.
-# To aid comparision, we use a constant architecture after the encoder, which is an MLP layer followed by a binary cross entropy loss computation
+# Basic Idea: Try 3 different models (BERT, XLNET and LSTM) to do sentiment analysis for each review.
 
 # imports
 import torch
@@ -74,24 +73,17 @@ print("Starting BERT Tokenization")
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True,max_length=512)
 dataset = YelpReviewsDataset(tokenizer)
-print ("LENGTH",len(dataset))
-print ("sample", dataset[1])
-print ("sample", dataset[2])
 
 dataset_test = YelpReviewsDataset(tokenizer,test=True)
-print ("LENGTH",len(dataset))
-print ("sample", dataset[1])
-print ("sample", dataset[2])
 
-#padded_sequences = tokenizer(list(review_text_train), padding=True)
-#print (f"tokenized inputs {padded_sequences['input_ids'][0]}")
-
-#input_ids = padded_sequences['input_ids']
-#attention_masks = padded_sequences['attention_mask']
 
 print("Starting Train-Validation Splitting")
 
-train_set, val_set = torch.utils.data.random_split(dataset, [460000, 100000])
+train_size = len(dataset)
+validation_size = int(train_size * 0.2)
+train_size = train_size - validation_size
+
+train_set, val_set = torch.utils.data.random_split(dataset, [train_size,validation_size])
 
 def collate_fn(batch):
     label_list, text_list,mask_list = [],[],[]
@@ -129,11 +121,10 @@ if device.type == 'cuda':
 
 num_labels = 2
 
-model = BertForSequenceClassification.from_pretrained("bert-base-uncased",
-                                                      num_labels=num_labels)
+model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=num_labels)
 model.to(device)
 
-# BERT fine-tuning parameters
+# BERT Parameters
 param_optimizer = list(model.named_parameters())
 no_decay = ['bias', 'gamma', 'beta']
 optimizer_grouped_parameters = [
@@ -143,8 +134,7 @@ optimizer_grouped_parameters = [
      'weight_decay_rate': 0.0}
 ]
 
-optimizer = AdamW(optimizer_grouped_parameters,
-                  lr=2e-5)
+optimizer = AdamW(optimizer_grouped_parameters, lr=2e-5)
 
 
 def train(model, iterator, optimizer):
@@ -246,7 +236,6 @@ print("Evaluating on Test Data")
 review_text_test = df_test.Text.values
 labels_test = df_test.Score.values
 
-#tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True,max_length=512)
 padded_sequences_test = tokenizer(list(review_text_test), padding=True)
 
 input_ids_test = padded_sequences_test['input_ids']
