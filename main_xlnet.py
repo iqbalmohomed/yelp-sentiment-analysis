@@ -73,24 +73,17 @@ print("Starting XLNet Tokenization")
 
 tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', max_length=512)
 dataset = YelpReviewsDataset(tokenizer)
-print ("LENGTH",len(dataset))
-print ("sample", dataset[1])
-print ("sample", dataset[2])
 
 dataset_test = YelpReviewsDataset(tokenizer,test=True)
-print ("LENGTH",len(dataset))
-print ("sample", dataset[1])
-print ("sample", dataset[2])
 
-#padded_sequences = tokenizer(list(review_text_train), padding=True)
-#print (f"tokenized inputs {padded_sequences['input_ids'][0]}")
-
-#input_ids = padded_sequences['input_ids']
-#attention_masks = padded_sequences['attention_mask']
 
 print("Starting Train-Validation Splitting")
 
-train_set, val_set = torch.utils.data.random_split(dataset, [460000, 100000])
+train_size = len(dataset)
+validation_size = int(train_size * 0.2)
+train_size = train_size - validation_size
+
+train_set, val_set = torch.utils.data.random_split(dataset, [train_size,validation_size])
 
 def collate_fn(batch):
     label_list, text_list,mask_list = [],[],[]

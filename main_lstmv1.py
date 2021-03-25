@@ -125,60 +125,12 @@ class LSTMClassifier(nn.Module):
         outputs = self.act(dense_outputs)
         return outputs
 
-def clip(ten,maxlen=512):
-    a = ten[:maxlen]
-    dif = maxlen - len(a)
-    ret = torch.cat((a[:maxlen],torch.zeros(dif,dtype=torch.int64)))
-    return ret
-
-
-
-class YelpReviewsDataset(Dataset):
-    def __init__(self,toklenizer,test=False):
-        filename = '/train.csv'
-        if test:
-            filename = '/test.csv'
-        self.df = pd.read_csv(data_dir + filename, names=["Score", "Text"])
-        print_df_stats(self.df, "Training Data")
-        self.df.Text = self.df.Text.str.slice(0, 512)
-        self.df.Score = self.df.Score - 1
-        self.review_text_train = self.df.Text.values
-        self.labels_train = self.df.Score.values
-        self.tokenizer = toklenizer
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx):
-        padded_sequence = self.tokenizer(self.review_text_train[idx],padding=True)
-        input_ids = padded_sequence['input_ids']
-        attention_mask = padded_sequence['attention_mask']
-        return torch.tensor(input_ids,dtype=torch.int64),torch.tensor(attention_mask,dtype=torch.int64),torch.tensor(self.labels_train[idx])
-
 
 dataset = YelpReviewPandasDataset(df_train)
 dataset_test = YelpReviewPandasDataset(df_test)
 print("Starting Train-Validation Splitting")
 
 train_set, val_set = torch.utils.data.random_split(dataset, [460000, 100000])
-
-def collate_fn(batch):
-    label_list, text_list,mask_list = [],[],[]
-    maxlen = 0
-    for row in batch:
-        if len(row[0]) > maxlen:
-            maxlen = len(row[0])
-
-    for row in batch:
-        label_list.append(row[2])
-        text_list.append(clip(row[0],maxlen))
-        mask_list.append(clip(row[1],maxlen))
-
-    label_list = torch.tensor(label_list,dtype=torch.int64)
-    text_list = torch.stack(text_list)
-    mask_list = torch.stack(mask_list)
-
-    return text_list,mask_list,label_list
 
 batch_size = 512
 
