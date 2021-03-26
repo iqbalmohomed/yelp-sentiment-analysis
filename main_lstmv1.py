@@ -273,6 +273,10 @@ print("Evaluating on Test Data")
 
 # Check performance on test set
 
+# Load best model that was saved
+model.load_state_dict(torch.load(lstm_model_path))
+model.eval()
+
 # Create an iterator of validation data with torch DataLoader
 test_sampler = SequentialSampler(dataset_test)
 test_dataloader = DataLoader(dataset_test, sampler=test_sampler, batch_size=batch_size,collate_fn=generate_batch)
@@ -280,4 +284,4 @@ test_dataloader = DataLoader(dataset_test, sampler=test_sampler, batch_size=batc
 
 test_loss, test_acc = evaluate(model, test_dataloader,criterion)
 print(f'Test Acc: {test_acc * 100:.2f}%')
-print(f'Test Loss: {test_loss * 100:.2f}%')
+print(f'Test Loss: {test_loss}')
