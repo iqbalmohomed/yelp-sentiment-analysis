@@ -24,8 +24,6 @@ data_dir = '/home/iqbal/nlpclassproject/yelp_review_polarity_csv'
 
 print (data_dir)
 
-df_test = pd.read_csv(data_dir + "/test.csv",names=["Score", "Text"])
-
 def print_df_stats(df,label=None):
     if label:
         print (label)
@@ -33,13 +31,6 @@ def print_df_stats(df,label=None):
     print ("Columns", df.columns)
     print (df.groupby("Score").count())
     print ("")
-
-print_df_stats(df_test, "Testing Data")
-
-df_test.Text = df_test.Text.str.slice(0,512)
-
-df_test.Score = df_test.Score - 1
-
 
 def clip(ten,maxlen=512):
     a = ten[:maxlen]
@@ -235,24 +226,12 @@ for _ in trange(N_EPOCHS, desc="Epoch"):
 print("Evaluating on Test Data")
 
 # Check performance on test set
-review_text_test = df_test.Text.values
-labels_test = df_test.Score.values
+model.load_state_dict(torch.load(xlnet_model_path))
+model.eval()
 
-#tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True,max_length=512)
-padded_sequences_test = tokenizer(list(review_text_test), padding=True)
-
-input_ids_test = padded_sequences_test['input_ids']
-attention_masks_test = padded_sequences_test['attention_mask']
-
-
-# Convert data into torch tensors
-test_inputs = torch.tensor(input_ids_test)
-test_labels = torch.tensor(labels_test)
-test_masks = torch.tensor(attention_masks_test)
 # Create an iterator of validation data with torch DataLoader
-test_data = TensorDataset(test_inputs, test_masks, test_labels)
-test_sampler = SequentialSampler(test_data)
-test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=batch_size)
+test_sampler = SequentialSampler(dataset_test)
+test_dataloader = DataLoader(dataset_test, sampler=test_sampler, batch_size=batch_size,collate_fn=collate_fn,num_workers=8)
 
 
 test_acc = evaluate(model, test_dataloader)
