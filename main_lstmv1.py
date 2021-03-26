@@ -24,7 +24,7 @@ import torch.optim as optim
 
 from tqdm import trange
 
-lstm_model_path = './lstm_yelpreviews_state_dictv1.pth'
+lstm_model_path = './lstm_yelpreviews_state_dictvf1.pth'
 
 data_dir = '/home/iqbal/nlpclassproject/yelp_review_polarity_csv'
 
@@ -90,12 +90,6 @@ def print_df_stats(df,label=None):
     print (df.groupby("Score").count())
     print ("")
 
-#print_df_stats(df_test, "Testing Data")
-
-#df_test.Text = df_test.Text.str.slice(0,512)
-#df_test.Score = df_test.Score - 1
-
-
 
 class LSTMClassifier(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, num_layers,
@@ -130,9 +124,13 @@ dataset = YelpReviewPandasDataset(df_train)
 dataset_test = YelpReviewPandasDataset(df_test)
 print("Starting Train-Validation Splitting")
 
-train_set, val_set = torch.utils.data.random_split(dataset, [460000, 100000])
+train_size = len(dataset)
+validation_size = int(train_size * 0.2)
+train_size = train_size - validation_size
 
-batch_size = 512
+train_set, val_set = torch.utils.data.random_split(dataset, [train_size,validation_size])
+
+batch_size = 2000
 
 # Create an iterator of train data with torch DataLoader
 train_sampler = RandomSampler(train_set)
@@ -152,12 +150,12 @@ num_labels = 2
 
 #define hyperparameters
 size_of_vocab = len(vocab)
-embedding_dim = 100
-hidden_dim = 32
+embedding_dim = 256
+hidden_dim = 100
 output_dim = 1
 num_layers = 2
 bidirection = True
-dropout = 0.2
+dropout = 0.3
 
 #instantiate the model
 model = LSTMClassifier(size_of_vocab, embedding_dim, hidden_dim, output_dim, num_layers,
@@ -172,7 +170,6 @@ print(next(model.parameters()).is_cuda, device)
 
 optimizer = optim.Adam(model.parameters())
 criterion = nn.BCELoss()
-
 
 
 def train(model, iterator, optimizer,criterion):
@@ -209,13 +206,6 @@ def train(model, iterator, optimizer,criterion):
 
     print('{} seconds'.format(time.time() - t0))
     return epoch_loss / len(iterator)
-
-
-# Function to calculate the accuracy of our predictions vs labels
-def flat_accuracy(preds, labels):
-    pred_flat = np.argmax(preds, axis=1).flatten()
-    labels_flat = labels.flatten()
-    return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
 # define metric
@@ -257,11 +247,9 @@ def evaluate(model, iterator, criterion):
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
 
-
-
 print("Starting Training Loop")
 
-N_EPOCHS = 100
+N_EPOCHS = 10
 best_valid_acc = 0
 
 # Model Training loop
@@ -284,8 +272,6 @@ for _ in trange(N_EPOCHS, desc="Epoch"):
 print("Evaluating on Test Data")
 
 # Check performance on test set
-review_text_test = df_test.Text.values
-labels_test = df_test.Score.values
 
 # Create an iterator of validation data with torch DataLoader
 test_sampler = SequentialSampler(dataset_test)
